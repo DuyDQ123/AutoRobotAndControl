@@ -30,8 +30,9 @@ void setup() {
   servoLeft.attach(leftPin);
   servoRight.attach(rightPin);
   
-  // Start Serial communication
+  // Start Serial communication with faster timeout
   Serial.begin(9600);
+  Serial.setTimeout(1);
 
   // Initialize I2C for MPU6050
   Wire.begin();
@@ -73,14 +74,19 @@ void loop() {
     // Read values from MPU6050
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
-    // Print sensor data to Serial Monitor
-    Serial.print("Dist: "); Serial.print(dist); Serial.print("cm | ");
-    Serial.print("AccX: "); Serial.print(ax);
-    Serial.print(" AccY: "); Serial.print(ay);
-    Serial.print(" AccZ: "); Serial.print(az);
-    Serial.print(" | GyroX: "); Serial.print(gx);
-    Serial.print(" GyroY: "); Serial.print(gy);
-    Serial.print(" GyroZ: "); Serial.println(gz);
+    // Send formatted data to ESP32-CAM
+    // Format: "D:distance,A:accX|accY|accZ,G:gyroX|gyroY|gyroZ"
+    // Format data into a single string before sending
+    String data = "D:";
+    data += String(dist);
+    data += ",A:";
+    data += String(ax) + "|" + String(ay) + "|" + String(az);
+    data += ",G:";
+    data += String(gx) + "|" + String(gy) + "|" + String(gz);
+    
+    // Send the complete line at once
+    Serial.println(data);
+    Serial.flush(); // Wait for data to be sent completely
 
     // Update time
     lastUpdate = millis();
@@ -104,7 +110,7 @@ void autoMode() {
     forward();    // Move forward if there's enough space
   } 
   else {
-    stopMotors(); // Stop if the distance is too far (you can add logic for different action)
+    stopMotors(); // Stop if the distance is too far
   }
 }
 
