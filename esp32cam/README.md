@@ -1,55 +1,68 @@
-# ESP32-CAM Project
+# ESP32-CAM Code Structure
 
-This directory contains the code for the ESP32-CAM module that handles video streaming and communication with the Arduino Uno.
+## Cấu trúc thư mục
+```
+esp32cam/
+├── esp32cam.ino      # File chính
+├── config.h          # Cấu hình WiFi và server
+├── camera_pins.h     # Định nghĩa chân kết nối camera
+├── camera_config.h   # Cấu hình và khởi tạo camera
+├── uart_config.h     # Cấu hình giao tiếp UART với Arduino
+└── server_config.h   # Cấu hình và xử lý web server
+```
 
-## Hardware Requirements
+## Giao tiếp UART với Arduino
+- ESP32-CAM sử dụng UART hardware trên chân:
+  - TX: GPIO15 (nối với RX6 của Arduino)
+  - RX: GPIO14 (nối với TX5 của Arduino)
+- Tốc độ baud: 9600
 
-- ESP32-CAM module
-- FTDI programmer or USB-to-TTL converter for programming
-- Jumper wires
+## Các Web Server
+1. Video Server (Port 80):
+- Xử lý stream hình ảnh từ camera
+- Route `/capture`: Chụp và gửi ảnh JPEG
 
-## Pin Connections
+2. Sensor Server (Port 81):
+- Nhận và xử lý dữ liệu cảm biến
+- Format dữ liệu: `D:distance,A:accX|accY|accZ,G:gyroX|gyroY|gyroZ`
 
-### Serial Communication with Arduino
-- ESP32 RX (GPIO3) ← Arduino TX (Pin 1)
-- ESP32 TX (GPIO1) → Arduino RX (Pin 0)
-- ESP32 GND → Arduino GND
+3. Control Server (Port 82):
+- Nhận lệnh điều khiển robot
+- Route `/control?command=<COMMAND>`
+- Các lệnh:
+  - FORWARD (F)
+  - BACKWARD (B)
+  - LEFT (L)
+  - RIGHT (R)
+  - STOP (S)
+  - CENTER (C)
+  - AUTO (A)
+  - MANUAL (M)
 
-Note: Using hardware Serial on GPIO1/GPIO3 (U0T/U0R pins) instead of GPIO16/17
+## Luồng hoạt động
 
-### Programming Connections (with FTDI)
-- ESP32 U0R → FTDI TX
-- ESP32 U0T → FTDI RX
-- ESP32 GND → FTDI GND
-- ESP32 5V → FTDI VCC
-- ESP32 GPIO0 → GND (for programming mode)
+### Khởi tạo (setup)
+1. Khởi tạo Serial debug (115200 baud)
+2. Thiết lập UART với Arduino (9600 baud)
+3. Kết nối WiFi
+4. Khởi tạo camera với cấu hình tối ưu
+5. Khởi tạo các web server
 
-## Required Libraries
+### Vòng lặp chính (loop)
+1. Đọc dữ liệu từ Arduino:
+   - Nhận dữ liệu cảm biến
+   - Parse và gửi lên web server
 
-- WiFi.h (ESP32 core)
-- esp_camera.h (ESP32 camera driver)
-- HTTPClient.h (ESP32 core)
-- WebServer.h (ESP32 core)
+2. Kiểm tra kết nối WiFi:
+   - Tự động kết nối lại nếu mất kết nối
 
-## Configuration
+3. Xử lý các request:
+   - Xử lý request chụp ảnh
+   - Xử lý request điều khiển
+   - Xử lý dữ liệu cảm biến
 
-The following settings can be configured in `config.h`:
-- WiFi credentials (SSID and password)
-- Web server URL
-
-## Features
-
-1. Video Streaming Server (Port 80)
-   - /capture endpoint for JPEG image capture
-
-2. Sensor & Control Server (Port 81)
-   - /control endpoint for robot movement commands
-   - Forwards commands to Arduino via Serial2
-   - Receives sensor data from Arduino
-   - Forwards sensor data to web interface
-
-## Debugging
-
-The ESP32-CAM uses hardware Serial (UART0) for Arduino communication:
-- Pins: GPIO1 (TX) and GPIO3 (RX)
-- Baudrate: 9600
+## Chú ý
+- Code được tổ chức theo modules để dễ bảo trì và mở rộng
+- Sử dụng hardware UART để giao tiếp với Arduino đảm bảo độ ổn định
+- Log đầy đủ thông tin debug qua Serial để dễ theo dõi
+- Có cơ chế tự động kết nối lại WiFi khi mất kết nối

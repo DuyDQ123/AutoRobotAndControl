@@ -1,59 +1,85 @@
-# Arduino Uno Project
+# Arduino UNO Code Structure
 
-This repository contains an Arduino sketch for a project using the Arduino Uno board.
+## Cấu trúc thư mục
+```
+arduinouno/
+├── arduinouno.ino     # File chính
+├── uart_config.h/.cpp # Giao tiếp Software Serial với ESP32
+├── servo_control.h/.cpp # Điều khiển servo
+├── sensors.h/.cpp     # Xử lý cảm biến
+└── auto_navigation.h/.cpp # Điều hướng tự động
+```
 
-## Hardware Requirements
+## Kết nối phần cứng
 
-- Arduino Uno board
-- ESP32-CAM module
-- Servo motors (2x)
-- Ultrasonic sensor (HC-SR04)
-- MPU6050 sensor
-- USB cable for programming
-- Jumper wires
+### 1. Giao tiếp với ESP32-CAM
+- Sử dụng Software Serial
+- RX: D6 (UNO) <- GPIO15 (ESP32)
+- TX: D5 (UNO) -> GPIO14 (ESP32)
+- Tốc độ baud: 9600
 
-## Pin Connections
+### 2. Servo Motors
+- Servo trái: Pin 11
+- Servo phải: Pin 10
 
-### Servo Motors
-- Left Servo: Pin 11
-- Right Servo: Pin 10
+### 3. Cảm biến siêu âm HC-SR04
+- TRIG: Pin 8
+- ECHO: Pin 9
+- Khoảng cách đo tối đa: 200cm
 
-### Ultrasonic Sensor (HC-SR04)
-- Trigger Pin: 8
-- Echo Pin: 9
+### 4. Cảm biến IMU MPU6050
+- Kết nối qua I2C
+- Đo gia tốc và góc quay
 
-### MPU6050
-- SDA: A4 (Arduino's I2C)
-- SCL: A5 (Arduino's I2C)
+## Giao thức truyền nhận
 
-### Serial Communication with ESP32-CAM
-- Arduino TX (Pin 1) → ESP32 RX (GPIO16)
-- Arduino RX (Pin 0) → ESP32 TX (GPIO17)
-- Arduino GND → ESP32 GND
+### 1. Nhận lệnh từ ESP32
+- Lệnh 1 ký tự:
+  - F: Forward (Tiến)
+  - B: Backward (Lùi)
+  - L: Left (Rẽ trái)
+  - R: Right (Rẽ phải)
+  - S: Stop (Dừng)
+  - A: Auto mode (Tự động)
+  - M: Manual mode (Điều khiển)
 
-## Required Libraries
+### 2. Gửi dữ liệu lên ESP32
+- Format: `D:distance,A:accX|accY|accZ,G:gyroX|gyroY|gyroZ`
+- Chu kỳ gửi: 500ms
+- Dữ liệu bao gồm:
+  - Khoảng cách (cm)
+  - Gia tốc (3 trục)
+  - Góc quay (3 trục)
 
-- Servo.h (Arduino built-in)
-- NewPing.h (HC-SR04 ultrasonic sensor)
-- Wire.h (Arduino built-in for I2C)
-- MPU6050.h (MPU6050 accelerometer/gyroscope)
+## Cơ chế hoạt động
 
-## Setup Instructions
+### 1. Khởi tạo (setup)
+1. Khởi tạo Serial debug (115200 baud)
+2. Khởi tạo Software Serial với ESP32 (9600 baud)
+3. Thiết lập servo
+4. Khởi tạo cảm biến MPU6050
 
-1. Clone this repository or download the files
-2. Open `arduinouno.ino` in the Arduino IDE
-3. Connect your Arduino Uno board to your computer via USB
-4. Select "Arduino Uno" from Tools > Board menu
-5. Select the correct COM port from Tools > Port menu
+### 2. Vòng lặp chính (loop)
+1. Kiểm tra lệnh từ ESP32:
+   - Đọc qua Software Serial
+   - Thực thi lệnh di chuyển
+   - Chuyển đổi chế độ Auto/Manual
 
-## Usage
+2. Nếu ở chế độ Auto:
+   - Thực hiện điều hướng tự động
+   - Tránh vật cản tự động
 
-Upload the sketch to your Arduino Uno board using the upload button (→) in the Arduino IDE. The program will start running automatically after upload completes.
+3. Cập nhật dữ liệu cảm biến:
+   - Đọc khoảng cách và IMU
+   - Định dạng dữ liệu
+   - Gửi qua Software Serial
+   - Chu kỳ cập nhật: 500ms
 
-## Project Structure
-
-- `arduinouno.ino`: Main Arduino sketch file containing the program code
-
-## License
-
-This project is open source and available under the MIT License.
+### 3. Debug
+- Hardware Serial (115200 baud): In log debug
+- Format log: `[DEBUG/INFO/ERROR] message`
+- Thông tin debug bao gồm:
+  - Trạng thái khởi tạo
+  - Lệnh nhận được
+  - Dữ liệu gửi đi
+  - Lỗi nếu có

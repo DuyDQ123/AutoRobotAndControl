@@ -1,6 +1,6 @@
 <?php
 // WiFi Network Configuration
-define('ESP32_IP', '192.168.137.90'); // ESP32's static IP address - update this to match your ESP32's IP
+define('ESP32_IP', '192.168.137.163'); // ESP32's static IP address - update this to match your ESP32's IP
 
 // Database Configuration
 define('DB_SERVER', 'localhost');

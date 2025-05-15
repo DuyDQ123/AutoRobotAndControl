@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            min-height: 100vh;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .video-container {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #camera-feed {
+            transform: rotate(180deg);
+            width: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        #sensor-data {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .sensor-group {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .sensor-group h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .sensor-group p {
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 16px;
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-container">
+            <h2>Camera Feed</h2>
+            <img id="camera-feed" src="" alt="Camera Feed">
+        </div>
+        <div id="sensor-data">
+            <h2>Sensor Readings</h2>
+            <div class="sensor-group">
+                <h4>Distance Sensor</h4>
+                <p><span id="distance">--</span> cm</p>
+            </div>
+            <div class="sensor-group">
+                <h4>Acceleration (MPU6050)</h4>
+                <p>X: <span id="acc-x">--</span></p>
+                <p>Y: <span id="acc-y">--</span></p>
+                <p>Z: <span id="acc-z">--</span></p>
+            </div>
+            <div class="sensor-group">
+                <h4>Gyroscope (MPU6050)</h4>
+                <p>X: <span id="gyro-x">--</span></p>
+                <p>Y: <span id="gyro-y">--</span></p>
+                <p>Z: <span id="gyro-z">--</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ESP32CAM IP address and ports
+        const ESP_IP = '192.168.137.163';
+        const VIDEO_PORT = 80;
+        const SENSOR_PORT = 81;
+
+        function updateSensorData() {
+            fetch(`http://${ESP_IP}:${SENSOR_PORT}/data`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('distance').textContent = data.data.distance || '--';
+                    document.getElementById('acc-x').textContent = data.data.acceleration.x || '--';
+                    document.getElementById('acc-y').textContent = data.data.acceleration.y || '--';
+                    document.getElementById('acc-z').textContent = data.data.acceleration.z || '--';
+                    document.getElementById('gyro-x').textContent = data.data.gyroscope.x || '--';
+                    document.getElementById('gyro-y').textContent = data.data.gyroscope.y || '--';
+                    document.getElementById('gyro-z').textContent = data.data.gyroscope.z || '--';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateCameraFeed() {
+            const img = document.getElementById('camera-feed');
+            img.src = `http://${ESP_IP}:${VIDEO_PORT}/capture?` + new Date().getTime();
+        }
+
+        // Update sensor data every 500ms
+        setInterval(updateSensorData, 500);
+        
+        // Update camera feed every 100ms
+        setInterval(updateCameraFeed, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .controls {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        .mode-control {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        #modeButton {
+            width: 200px;
+            background-color: #28a745;
+            margin: 10px 0;
+        }
+        #modeButton.auto {
+            background-color: #dc3545;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        h2, h3 {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            text-align: center;
+        }
+        #modeStatus {
+            color: #6c757d;
+            margin: 10px 0;
+        }
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .controls {
+                padding: 20px;
+            }
+            .button-grid button {
+                padding: 25px;  /* Larger touch targets */
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>Robot Controls</h2>
+        <div class="mode-control">
+            <h3>Control Mode</h3>
+            <button id="modeButton" onclick="toggleMode()">Manual Mode</button>
+            <p id="modeStatus">Current Mode: Manual Control</p>
+        </div>
+        <div class="button-grid">
+            <button onmousedown="sendCommand('FORWARD')" onmouseup="sendCommand('STOP')" onmouseleave="sendCommand('STOP')">Forward</button>
+            <button onclick="sendCommand('STOP')">Stop</button>
+            <button onmousedown="sendCommand('BACKWARD')" onmouseup="sendCommand('STOP')" onmouseleave="sendCommand('STOP')">Backward</button>
+            <button onmousedown="sendCommand('LEFT')" onmouseup="sendCommand('CENTER')" onmouseleave="sendCommand('CENTER')">Left</button>
+            <button onclick="sendCommand('CENTER')">Center</button>
+            <button onmousedown="sendCommand('RIGHT')" onmouseup="sendCommand('CENTER')" onmouseleave="sendCommand('CENTER')">Right</button>
+        </div>
+    </div>
+
+    <script>
+        // Add keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (!isAutoMode) {  // Only in manual mode
+                switch(e.key) {
+                    case 'ArrowUp':    
+                        sendCommand('FORWARD'); break;
+                    case 'ArrowDown':  
+                        sendCommand('BACKWARD'); break;
+                    case 'ArrowLeft':  
+                        sendCommand('LEFT'); break;
+                    case 'ArrowRight': 
+                        sendCommand('RIGHT'); break;
+                    case ' ':          
+                        sendCommand('STOP'); break;
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!isAutoMode) {  // Only in manual mode
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                        sendCommand('STOP'); break;
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        sendCommand('CENTER'); break;
+                }
+            }
+        });
+
+        // ESP32CAM IP address and control port
+        const ESP_IP = '192.168.137.163';
+        const CONTROL_PORT = 82;
+
+        let isAutoMode = false;
+        let autoModeInterval = null;
+
+        function toggleMode() {
+            isAutoMode = !isAutoMode;
+            const modeButton = document.getElementById('modeButton');
+            const modeStatus = document.getElementById('modeStatus');
+            
+            modeButton.textContent = isAutoMode ? 'Auto Mode' : 'Manual Mode';
+            modeButton.classList.toggle('auto', isAutoMode);
+            modeStatus.textContent = `Current Mode: ${isAutoMode ? 'Autonomous Navigation' : 'Manual Control'}`;
+            
+            if (isAutoMode) {
+                sendCommand('AUTO');
+            } else {
+                sendCommand('MANUAL');
+            }
+        }
+
+        function sendCommand(command) {
+            fetch(`http://${ESP_IP}:${CONTROL_PORT}/control?command=${encodeURIComponent(command)}`, {
+                method: 'GET'
+            })
+            .then(response => response.text())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
